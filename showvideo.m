@@ -2,16 +2,17 @@
 %vidfile = '026_2012-03-20_11-00-01';
 vidfile = '011_2014-04-12_11-00-01'; 
 %vidfile = '015_2010-07-30_09-00-01'; 
-load([vidfile,'_trackedblobs.mat']);
+load([vidfile, '_trackedblobs.mat']);
 
 % Video playback
 reader = video.MultimediaFileReader([vidfile,'.avi']);
 hdvp = video.DeployableVideoPlayer;
-hdvp.FrameRate = 5;     % can be obtained from VideoReader object
 hdvp.Location = [150 -75];
+hdvp.FrameRate = 5;
 
 % Write video to disk
-hmfw = video.MultimediaFileWriter([vidfile,'_visuals.avi'],'AudioInputPort',false,'VideoInputPort',true);
+%hmfw = video.MultimediaFileWriter([vidfile,'_visuals.avi'],'AudioInputPort',false,'VideoInputPort',true);
+%hmfw.FrameRate = hdvp.FrameRate;        % use same frame rate as original
 
 % Initialize graphic objects
 shapes = video.ShapeInserter('BorderColor','Custom',...
@@ -88,18 +89,19 @@ while ~isDone(reader)
        
         % *** NOTE: INSERTING TEXT REAL-TIME CAUSES VIDEO TO LAG
         % overlay track number in box
-        %frame = step(framenumtext, frame, currentTracks, fntextpos);
+        frame = step(framenumtext, frame, currentTracks, fntextpos);
         
         % release all locked objects
         release(shapes);
         release(shapes2);
         release(centroidmarker);
         release(tracklines);
-        %release(framenumtext);
+        release(framenumtext);
     end
     step(hdvp, frame);
-    step(hmfw, frame);      % WRITE FRAME TO FILE
+    %step(hmfw, frame);      % WRITE FRAME TO FILE
     f = f+1;                % keep track of frame number
 end
 release(reader);       
 release(hdvp);
+clear all;
