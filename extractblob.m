@@ -1,3 +1,4 @@
+
 function [blobCell, trackCell, timesortedBlobs] = extractblob(vidfile, options)
 % EXTRACTBLOB Extract tracked blobs from LOST dataset based on
 %             textfile data provided
@@ -64,12 +65,19 @@ if ~isfield(options,'verbose')
      options.verbose = 1; 
 end
 
+path = 'D:\Code\lovis';                         % change accordingly if used
+
 mov = VideoReader([vidfile,'.avi']);            % assume AVI format for current use
 
-[fr, x, y, w, h]= textread([vidfile,'_blobs.txt'], '%d %d %d %d %d',-1);
+
+% read stuff
+[fr, x, y, w, h] = textread([vidfile,'_blobs.txt'], '%d %d %d %d %d',-1);
 blobMat = [fr x y w h]; 
 
-[tr, tfr, tx1, ty1]=textread([vidfile,'_tracks.txt'], '%d %d %d %d',-1);
+[tr, tfr, tx1, ty1] = textread([vidfile,'_tracks.txt'], '%d %d %d %d',-1);
+
+[ts, fof, fsz] = textread([vidfile,'_timestamps.txt'], '%8f %d %d',-1);
+
 % Clean up track information (remove rows with frame '0')
 framezero = find(tfr==0);
 for k=1:length(framezero)
@@ -87,79 +95,88 @@ numBlobs = size(trackMat, 1);        % take number of lines from tracks.txt
 numTracks = length(unique(tr));      % take unique number of tracks from tracks.txt
 blobCell = cell(numBlobs,2);         % create blob cell variable
 trackCell = cell(numTracks,1);       % create track cell variable
+tdiff = diff(ts);                    % time difference between successive frames
 
-% Blob cell information
-for i=1:numBlobs
-    % Re-assign some variables for convenience           
-    fr1 = tfr(i);
-    x1 = tx1(i); 
-    y1 = ty1(i);
-    
-    % Locate tracked object from "tracks_txt" in "blobs.txt"
-    blobIdx = intersect(intersect(find(fr1==fr),find(x1==x)),find(y1==y));           
-    
-    if (fr1 == fr(blobIdx) && x1 == x(blobIdx) && y1 == y(blobIdx))
-        sx = x1 - ceil(w(blobIdx)/2);       % Note: x moves horizontally (left to right) along width
-        sy = y1 - ceil(h(blobIdx)/2);       % Note: y moves vertically (top to bottom) along height        
-        esx = sx+w(blobIdx)-1;              % end position for x
-        esy = sy+h(blobIdx)-1;              % end position for y
-        
-        % Fix boundary if blob region falls to either edge of image
-        if (sx < 1) 
-            sx = 1; 
+    % Blob cell information
+    for i=1:numBlobs
+        % Re-assign some variables for convenience           
+        fr1 = tfr(i);
+        x1 = tx1(i); 
+        y1 = ty1(i);
+
+        % Locate tracked object from "tracks_txt" in "blobs.txt"
+        blobIdx = intersect(intersect(find(fr1==fr),find(x1==x)),find(y1==y));           
+
+
+        if (fr1 == fr(blobIdx) && x1 == x(blobIdx) && y1 == y(blobIdx))
+            sx = x1 - ceil(w(blobIdx)/2);       % Note: x moves horizontally (left to right) along width
+            sy = y1 - ceil(h(blobIdx)/2);       % Note: y moves vertically (top to bottom) along height        
+            esx = sx+w(blobIdx)-1;              % end position for x
+            esy = sy+h(blobIdx)-1;              % end position for y
+
+            % Fix boundary if blob region falls to either edge of image
+            if (sx < 1) 
+                sx = 1; 
+            end
+            if (sy < 1)
+                sy = 1; 
+            end
+            if ((x1 + ceil(w(blobIdx)/2)-1) > mov.Width) 
+                esx = mov.Width; 
+            end
+            if ((x1 + ceil(h(blobIdx)/2)-1) > mov.Width) 
+                esy = mov.Height; 
+            end
         end
-        if (sy < 1)
-            sy = 1; 
+
+        % Append track number and frame number (data keys) to blobCell
+        blobCell{i,1} = tr(i);          % COL#1: track number    
+        blobCell{i,2} = fr1;            % COL#2: frame number
+
+        % Read image from video object and extract blob
+        img = read(mov,fr1);
+        blob_img = img(sy:esy,sx:esx,:);
+        if options.verbose
+            disp(['Processing blob ',num2str(i),' / ',num2str(numBlobs),'...']); 
         end
-        if ((x1 + ceil(w(blobIdx)/2)-1) > mov.Width) 
-            esx = mov.Width; 
-        end
-        if ((x1 + ceil(h(blobIdx)/2)-1) > mov.Width) 
-            esy = mov.Height; 
-        end
+        blobsizes(i) = numel(blob_img)/3;    % Determine blob size
+
+        % Store in cell variable -- extracted blob images & blob dimension info
+        blobCell{i,3} = blob_img;       % COL#3: blob image
+            if options.display      
+                imshow(blob_img);
+                title(['T ',num2str(fr1),' | F ',num2str(fr1)]);
+                pause(0.5);         
+                close all;
+            end
+        blobCell{i,4} = [y1 x1 sy sx w(blobIdx) h(blobIdx)];   % COL#4: bounding box
+
+        % [SHELVED] imwrite to the disk to store a copy of the extracted blob
+        % For now, just store in .mat workspace file for more compact storage
     end
-    
-    % Append track number and frame number (data keys) to blobCell
-    blobCell{i,1} = tr(i);          % COL#1: track number    
-    blobCell{i,2} = fr1;            % COL#2: frame number
-    
-    % Read image from video object and extract blob
-    img = read(mov,fr1);
-    blob_img = img(sy:esy,sx:esx,:);
-    if options.verbose
-        disp(['Processing blob ',num2str(i),' / ',num2str(numBlobs),'...']); 
-    end
-    blobsizes(i) = numel(blob_img)/3;    % Determine blob size
+
+
+    % Track cell information
+    trackCount = nonzeros(sparse(histc(tr,0:max(tr))));
+    trackIdx = unique(tr);
+
+    for t=1:numTracks
+        trackCell{t}.trackID = trackIdx(t);
+        trackCell{t}.numFrames = trackCount(t);
+        trackCell{t}.label = '';
+        trackCell{t}.blobIdxs = find(tr==trackIdx(t));
+        trackCell{t}.blobFrameNums = tfr(trackCell{t}.blobIdxs);
+        trackCell{t}.fv = computefeatvec(t, trackCell, blobCell, tdiff);
  
-    % Store in cell variable -- extracted blob images & blob dimension info
-    blobCell{i,3} = blob_img;       % COL#3: blob image
-        if options.display      
-            imshow(blob_img);
-            title(['T ',num2str(fr1),' | F ',num2str(fr1)]);
-            pause(0.25);         
-            close all;
-        end
-    blobCell{i,4} = [y1 x1 sy sx w(blobIdx) h(blobIdx)];   % COL#4: bounding box
-        
-    % [SHELVED] imwrite to the disk to store a copy of the extracted blob
-    % For now, just store in .mat workspace file for more compact storage
-end
-
-% Track cell information
-trackCount = nonzeros(sparse(histc(tr,0:max(tr))));
-trackIdx = unique(tr);
-
-for t=1:numTracks
-    trackCell{t}.trackID = trackIdx(t);
-    trackCell{t}.numFrames = trackCount(t);
-    trackCell{t}.label = '';
-    trackCell{t}.blobIdxs = find(tr==trackIdx(t));
-    trackCell{t}.blobFrameNums = tfr(trackCell{t}.blobIdxs);
-    %trackCell{t}.blobSizes = blobsizes(trackCell{t}.blobIdxs)';
-    
-    % More track information to be appended over here
-    % e.g. velocity, feature descriptor, etc. 
-end
+        % More track information to be appended over here
+        % e.g. velocity, feature descriptor, etc. 
+        %trackCell{t}.blobSizes = blobsizes(trackCell{t}.blobIdxs)';
+ 
+    end
 
 % Save important variables to storage
+cd(path);
 save([vidfile,'_trackedblobs'],'blobCell','trackCell','timesortedBlobs');  
+
+end
+
