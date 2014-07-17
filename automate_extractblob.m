@@ -11,8 +11,10 @@ camera = {'001','002','003','004','005','006','007','008','009', '010', '011','0
     '015','016','017','018','019','020','021','022','024', '025','026'}; %24 cameras
 
 for i=16:16 % camera 017
-    camera_folder= dir(['D:\LOST\', camera{i}]);
-    cd (['D:\LOST\', camera{i}]);
+    %camera_folder= dir(['D:\LOST\', camera{i}]);
+    camera_folder= dir(['G:\Camera\', camera{i}]);
+   
+    cd (['G:\Camera\', camera{i}]);
     mkdir('MAT Files');
     fileID = fopen('extractblob_errors.txt','w');
     pwd
