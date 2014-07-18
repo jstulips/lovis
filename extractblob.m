@@ -65,20 +65,17 @@ if ~isfield(options,'verbose')
      options.verbose = 1; 
 end
 
-path = 'D:\Code\lovis';                         % change accordingly if used
-blobtxt_path=[pwd,'\', vidfile(1:3),'_blobs\']; % SY: folder that contains the blob/track.txt
-tracktxt_path=[pwd,'\', vidfile(1:3),'_tracks\'];
-timetxt_path=[pwd,'\', vidfile(1:3),'_timestamps\'];
-mov = VideoReader([vidfile,'.avi']);            % assume AVI format for current use
+path = 'D:\Code';                         % change accordingly if used
+mov = VideoReader([vidfile,'.avi']);      % assume AVI format for current use 
 
 
 % read stuff
-[fr, x, y, w, h] = textread([blobtxt_path,vidfile,'_blobs.txt'], '%d %d %d %d %d',-1);
+[fr, x, y, w, h] = textread(vidfile,'_blobs.txt'], '%d %d %d %d %d',-1);
 blobMat = [fr x y w h]; 
 
-[tr, tfr, tx1, ty1] = textread([tracktxt_path,vidfile,'_tracks.txt'], '%d %d %d %d',-1);
+[tr, tfr, tx1, ty1] = textread([vidfile,'_tracks.txt'], '%d %d %d %d',-1);
 
-[ts, fof, fsz] = textread([timetxt_path, vidfile,'_timestamps.txt'], '%8f %d %d',-1);
+[ts, fof, fsz] = textread([vidfile,'_timestamps.txt'], '%8f %d %d',-1);
 
 % Clean up track information (remove rows with frame '0')
 framezero = find(tfr==0);
