@@ -19,21 +19,15 @@ for i=16:16 % camera 017
     fileID = fopen('extractblob_errors.txt','w');
     pwd
 
-        for j=3:(size(camera_folder)-5)
+        for j=3:(size(camera_folder)-4)
             try
             vidfile=camera_folder(j).name;
-            %if exist([pwd,'\', vidfile(1:3),'_blobs\',vidfile(1:23),'_blobs.txt'], 'file')==2 && ...
-             %       exist([pwd,'\', vidfile(1:3),'_tracks\',vidfile(1:23),'_tracks.txt'], 'file')==2
-            if exist(['D:\LOST\017\017_blobs\',vidfile(1:23),'_blobs.txt'], 'file')==2 && ...
-               exist(['D:\LOST\017\017_tracks\',vidfile(1:23),'_tracks.txt'], 'file')==2
+            if exist([pwd,'\', vidfile(1:3),'_blobs\',vidfile(1:23),'_blobs.txt'], 'file')==2 && ...
+                    exist([pwd,'\', vidfile(1:3),'_tracks\',vidfile(1:23),'_tracks.txt'], 'file')==2
+                if exist(['D:\LOST\017\017_blobs\',vidfile(1:23),'_blobs.txt'], 'file')==2 && ...
+                    exist(['D:\LOST\017\017_tracks\',vidfile(1:23),'_tracks.txt'], 'file')==2
                 % checks whether blob/track txt file exist
-                
-                blobtxt_path=['D:\LOST\017\', vidfile(1:3),'_blobs\']; % SY: folder that contains the blob/track.txt
-                tracktxt_path=['D:\LOST\017\', vidfile(1:3),'_tracks\'];
-                timetxt_path=['D:\LOST\017\', vidfile(1:3),'_timestamps\'];
-                saveto_path='D:\LOST\017\MAT Files';
-             % testing
-                [blobCell, trackCell, timesortedBlobs] =extractblob(vidfile(1:23),options, blobtxt_path, tracktxt_path, timetxt_path, saveto_path);
+                [blobCell, trackCell, timesortedBlobs] =extractblob(vidfile(1:23),options);
             else
                 fprintf(fileID,'Warning: Blob or Track file does not exist for %s:\n', vidfile )
                 
