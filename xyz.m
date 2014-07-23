@@ -17,12 +17,16 @@ for f = 1 : T
     disp(['Computing distances from track ',num2str(f),' / ',num2str(T)]);
 end
 
+% compute affinity matrix (Gaussian kernel) from distance matrix
+sigma = 1;   % sigma = 5 as reported in paper seems like a really bad value...
+AMat = exp(-distMat./(sigma^2));
+
 % normalize distance matrix (using min-max normalization)
 distMat = normalization(distMat,'minmax');
 
 % perform k-means clustering
 disp(sprintf('\nPerforming k-means clustering...'));
-clusterNum=2;
+clusterNum = 41;
 [centerIndex, U, objFun] = kMeansClusteringOnDist(distMat, clusterNum);
 [clusterID tID] = find(U);
 
