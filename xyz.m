@@ -26,7 +26,7 @@ AMat = exp(-distMat./(sigma^2));
 
 % perform k-means clustering
 disp(sprintf('\nPerforming k-means clustering...'));
-clusterNum=7;
+clusterNum = 7;
 [centerIndex, U, objFun] = kMeansClusteringOnDist(distMat, clusterNum);
 [clusterID tID] = find(U);
 
