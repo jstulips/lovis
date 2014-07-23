@@ -20,6 +20,10 @@ end
 % normalize distance matrix (using min-max normalization)
 distMat = normalization(distMat,'minmax');
 
+% compute affinity matrix (Gaussian kernel) from distance matrix
+sigma = 1;   % sigma = 5 as reported in paper seems like a really bad value...
+AMat = exp(-distMat./(sigma^2));
+
 % perform k-means clustering
 disp(sprintf('\nPerforming k-means clustering...'));
 clusterNum=7;
