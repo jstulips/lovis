@@ -19,7 +19,7 @@ for i=16:16 % camera 017
     fileID = fopen('extractblob_errors.txt','w');
     pwd
 
-        for j=3:(size(camera_folder)-7)
+        for j=8:(size(camera_folder)-5)% start from 8th file, exclu
             try
             vidfile=camera_folder(j).name;
             %if exist([pwd,'\', vidfile(1:3),'_blobs\',vidfile(1:23),'_blobs.txt'], 'file')==2 && ...
@@ -33,7 +33,6 @@ for i=16:16 % camera 017
                 timetxt_path=['D:\LOST\017\', vidfile(1:3),'_timestamps\'];
                 saveto_path='D:\LOST\017\MAT Files';
              % testing
-             vidfile = '011_2014-04-12_11-00-01';
                 [blobCell, trackCell, timesortedBlobs] =extractblob(vidfile(1:23),options);
             else
                 fprintf(fileID,'Warning: Blob or Track file does not exist for %s:\n', vidfile )

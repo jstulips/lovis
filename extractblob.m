@@ -66,9 +66,9 @@ if ~isfield(options,'verbose')
 end
 
 path = 'D:\LOST\017\MAT Files';                         % change accordingly if used
-blobtxt_path=[pwd,'\', vidfile(1:3),'_blobs\']; % SY: folder that contains the blob/track.txt
-tracktxt_path=[pwd,'\', vidfile(1:3),'_tracks\'];
-timetxt_path=[pwd,'\', vidfile(1:3),'_timestamps\'];
+blobtxt_path=['D:\LOST\017\', vidfile(1:3),'_blobs\']; % SY: folder that contains the blob/track.txt
+tracktxt_path=['D:\LOST\017\', vidfile(1:3),'_tracks\'];
+timetxt_path=['D:\LOST\017\', vidfile(1:3),'_timestamps\'];
 mov = VideoReader(['D:\LOST\017\',vidfile,'.avi']);            % assume AVI format for current use
 
 

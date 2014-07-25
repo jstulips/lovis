@@ -19,11 +19,10 @@ for i=16:16 % camera 017
     fileID = fopen('extractblob_errors.txt','w');
     pwd
 
-        for j=3:(size(camera_folder)-7)
+        for j=8:(size(camera_folder)-5)% start from 8th file, exclude 4 folders and a txt file
             try
             vidfile=camera_folder(j).name;
-            %if exist([pwd,'\', vidfile(1:3),'_blobs\',vidfile(1:23),'_blobs.txt'], 'file')==2 && ...
-             %       exist([pwd,'\', vidfile(1:3),'_tracks\',vidfile(1:23),'_tracks.txt'], 'file')==2
+         
             if exist(['D:\LOST\017\017_blobs\',vidfile(1:23),'_blobs.txt'], 'file')==2 && ...
                exist(['D:\LOST\017\017_tracks\',vidfile(1:23),'_tracks.txt'], 'file')==2
                 % checks whether blob/track txt file exist
