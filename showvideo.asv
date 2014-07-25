@@ -1,6 +1,6 @@
 %vidfile = '006_2010-07-24_17-00-00';
 vidfile = '017_2013-07-27_11-00-01'; 
-load(['\LOST\017\MAT Files\',vidfile, '_trackedblobs.mat']);
+load([vidfile, '_trackedblobs.mat']);
 
 % Video playback
 reader = video.MultimediaFileReader([vidfile,'.avi']);

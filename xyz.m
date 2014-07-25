@@ -1,5 +1,6 @@
-vidfile = '011_2014-04-12_11-00-01';
-load([vidfile,'_trackedblobs']);
+function xyz(vidfile)
+vidfile = '001_2010-09-09_11-00-00';
+load(['\LOST\001\MAT Files\',vidfile,'_trackedblobs'],'blobCell','trackCell');
 
 % compute pairwise distance matrix
 T = length(trackCell);
