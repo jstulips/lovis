@@ -1,49 +1,50 @@
-%vidfile = '006_2010-07-24_17-00-00';               % airport, sparse
-%vidfile = '011_2014-04-12_11-00-01';               % open space in front of church            
-%vidfile = '026_2012-03-20_11-00-01';               % plaza pedestrians
-%vidfile = '015_2010-07-30_09-00-01';               % busy traffic scene
-options.verbose = 0;
-options.display = 0;
-%[blobCell,trackCell,timesortedBlobs] = extractblob(vidfile,options);
-
-
+db_path = 'D:\LOST\';
+mat_dir_name = 'Mat Files';
 camera = {'001','002','003','004','005','006','007','008','009', '010', '011','013','014',...
     '015','016','017','018','019','020','021','022','024', '025','026'}; %24 cameras
+options.verbose = 1;
+options.display = 0;
 
-for i=16:16 % camera 017
-    camera_folder= dir(['D:\LOST\', camera{i}]);
-    %camera_folder= dir(['G:\Camera\', camera{i}]);
-   
-    cd (['D:\LOST\', camera{i}]);
-    mkdir('MAT Files');
-    fileID = fopen('extractblob_errors.txt','w');
-    pwd
+for i = 16 : 16 % camera 017
+    camera_folder= dir([db_path, camera{i}, '\*.avi']);
+    camera_path = [db_path, camera{i}, '\'];
+    
+    cd(camera_path);
+    mkdir(mat_dir_name);
+    savepath = [camera_path, mat_dir_name];
 
-        for j=8:(size(camera_folder)-5)% start from 8th file, exclude 4 folders and a txt file
-            try
-            vidfile=camera_folder(j).name;
-         
-            if exist(['D:\LOST\017\017_blobs\',vidfile(1:23),'_blobs.txt'], 'file')==2 && ...
-               exist(['D:\LOST\017\017_tracks\',vidfile(1:23),'_tracks.txt'], 'file')==2
-                % checks whether blob/track txt file exist
-                
-                blobtxt_path=['D:\LOST\017\', vidfile(1:3),'_blobs\']; % SY: folder that contains the blob/track.txt
-                tracktxt_path=['D:\LOST\017\', vidfile(1:3),'_tracks\'];
-                timetxt_path=['D:\LOST\017\', vidfile(1:3),'_timestamps\'];
-                saveto_path='D:\LOST\017\MAT Files';
-             % testing
-                [blobCell, trackCell, timesortedBlobs] =extractblob(vidfile(1:23),options);
-            else
-                fprintf(fileID,'Warning: Blob or Track file does not exist for %s:\n', vidfile )
-                
+        for j = 1 : length(camera_folder) 
+            
+            vidfile = camera_folder(j).name;
+            vidfilename = strtok(vidfile,'.avi');
+            
+            % if file already generated, skip iteration
+            cd(savepath);
+            if all(exist([vidfilename,'_trackedblobs.mat']))
+                disp(['Extraction of ',vidfilename,' skipped']);
+                continue;      
             end
-            catch e
-                msgString = getReport(e);
-                fprintf(fileID,'Error occurred for %s: %s\n', vidfile, msgString)
-                continue
+            
+            blobtxt_path = [camera_path, camera{i}, '_blobs\', vidfilename, '_blobs.txt'];
+            tracktxt_path = [camera_path, camera{i}, '_tracks\', vidfilename, '_tracks.txt'];
+            timetxt_path = [camera_path, camera{i}, '_timestamps\', vidfilename, '_timestamps.txt'];
+            
+            % Error checking
+            if exist(blobtxt_path) ~= 2
+                error('Blob file not found!');
+            elseif exist(tracktxt_path) ~= 2
+                error('Track file not found!');
+            elseif exist(timetxt_path) ~= 2
+                error('Timestamps file not found!');
             end
+          
+            mov = VideoReader([camera_path,vidfile]);      
+            paths = {blobtxt_path, tracktxt_path, timetxt_path};
+            [blobCell, trackCell, timesortedBlobs] = extractblob(mov, paths, options);
+
+            % save variables to MAT-file
+            cd(savepath);
+            save([vidfilename,'_trackedblobs.mat'],'blobCell','trackCell','timesortedBlobs');  
         end
-   
-    fclose(fileID)
 end
 
