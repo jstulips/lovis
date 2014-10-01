@@ -1,18 +1,19 @@
-
-function [blobCell, trackCell, timesortedBlobs] = extractblob(vidfile, options)
+function [blobCell, trackCell, timesortedBlobs] = extractblob(mov, paths, options)
 % EXTRACTBLOB Extract tracked blobs from LOST dataset based on
 %             textfile data provided
 %
-%   Usage: [BLOBCELL, TRACKCELL, TIMESORTEDBLOBS] = EXTRACTBLOB(VIDFILE, OPTIONS) 
+%   Usage: [BLOBCELL, TRACKCELL, TIMESORTEDBLOBS] = EXTRACTBLOB(MOV, PATHS, OPTIONS) 
 %
 %   Input:
-%       VIDFILE = video filename without extension
+%       VIDFILE = VideoReader object of the input video
+%       PATHS = 3-element cell containing paths for blob
+%           textfile (1st), track textfile (2nd) and timestamp textfile (3rd)
 %       OPTIONS = a selection of options 
 %           OPTIONS.DISPLAY = display blob image extracted
 %                            (1 = yes, 0 = no (default))    
 %           OPTIONS.VERBOSE = show stepwise progress (per blob)
 %                            (1 = yes (default), 0 = no)
-%
+%       
 %   Output:
 %       BLOBCELL = M-by-4 cell array, containing information for
 %                  M tracked blob images
@@ -31,11 +32,14 @@ function [blobCell, trackCell, timesortedBlobs] = extractblob(vidfile, options)
 %                             (rows)
 %
 %       TRACKCELL = cell array, containing track information:
-%                   TRACKCELL.NUMFRAMES = number of frames in track
-%                   TRACKCELL.LABEL = track label
-%                   TRACKCELL.BLOBIDXS = IDs of tracked blobs, 
-%                   corresponding to the indices in BLOBCELL
-%                   TRACKCELL.BLOBFRAMENUMS = Frame number of tracked blobs 
+%                   TRACKCELL.TRACKID : track ID number
+%                   TRACKCELL.NUMFRAMES : number of frames in track
+%                   TRACKCELL.LABEL : track label
+%                   TRACKCELL.BLOBIDXS : IDs of tracked blobs, 
+%                       corresponding to the indices in BLOBCELL
+%                   TRACKCELL.BLOBFRAMENUMS : frame number of tracked blobs 
+%                   TRACKCELL.FV : feature vector, with 4 variables 
+%                       (x-position, y-position, x-velocity, y-velocity)
 %
 %                   [Currently excluded] 
 %                   TRACKCELL.BLOBSIZES = Sizes of blobs in track
@@ -45,17 +49,12 @@ function [blobCell, trackCell, timesortedBlobs] = extractblob(vidfile, options)
 %       TIMESORTEDBLOBS = matrix containing same information in 'tracks'
 %                         textfile, but sorted according to frame (time)
 %
-%   Example of usage:
-%       vidfile = '006_2010-07-24_17-00-00';
-%       options.display = 1;       
-%       options.verbose = 1;
-%       blobcell = extractblob(vidfile,options);
 %
-%   --Copyright LoViS, 2014, 17-04-2014
+%   --Copyright LoViS, 2014, 01-10-2014
 %
-if nargin < 1
+if nargin < 2
      error('Too few input arguments'); 
-elseif nargin < 2
+elseif nargin < 3
      options = struct('display',0,'verbose',1); 
 end
 if ~isfield(options,'display')
@@ -63,19 +62,34 @@ if ~isfield(options,'display')
 end
 if ~isfield(options,'verbose')
      options.verbose = 1; 
+<<<<<<< HEAD
 end
 
 path = 'D:\Code';                         % change accordingly if used
 mov = VideoReader([vidfile,'.avi']);      % assume AVI format for current use 
+=======
+end 
+>>>>>>> lovis-suyin
 
+% obtain filename from VideoReader object
+vidfile = strtok(mov.name,'.avi');
 
 % read stuff
+<<<<<<< HEAD
 [fr, x, y, w, h] = textread(vidfile,'_blobs.txt'], '%d %d %d %d %d',-1);
 blobMat = [fr x y w h]; 
 
 [tr, tfr, tx1, ty1] = textread([vidfile,'_tracks.txt'], '%d %d %d %d',-1);
 
 [ts, fof, fsz] = textread([vidfile,'_timestamps.txt'], '%8f %d %d',-1);
+=======
+[fr, x, y, w, h] = textread(paths{1}, '%d %d %d %d %d',-1);
+blobMat = [fr x y w h]; 
+
+[tr, tfr, tx1, ty1] = textread(paths{2}, '%d %d %d %d',-1);
+
+[ts, fof, fsz] = textread(paths{3}, '%8f %d %d',-1);
+>>>>>>> lovis-suyin
 
 % Clean up track information (remove rows with frame '0')
 framezero = find(tfr==0);
@@ -97,7 +111,7 @@ trackCell = cell(numTracks,1);       % create track cell variable
 tdiff = diff(ts);                    % time difference between successive frames
 
     % Blob cell information
-    for i=1:numBlobs
+    for i = 1 : numBlobs
         % Re-assign some variables for convenience           
         fr1 = tfr(i);
         x1 = tx1(i); 
@@ -106,7 +120,17 @@ tdiff = diff(ts);                    % time difference between successive frames
         % Locate tracked object from "tracks_txt" in "blobs.txt"
         blobIdx = intersect(intersect(find(fr1==fr),find(x1==x)),find(y1==y));           
 
+        % Problem occurs when there's more than one blob recorded at the same
+        % location. If yes, take blob with the largest area (assume that
+        % smaller ones most likely are spurious detections or noise or
+        % some sort of error in recording...)
+        if (length(blobIdx) > 1)
+            blobareas = w(blobIdx).*h(blobIdx);
+            LBid = blobareas==max(blobareas);
+            blobIdx = blobIdx(LBid);            % assign to that blob
+        end
 
+        % Get blob region points
         if (fr1 == fr(blobIdx) && x1 == x(blobIdx) && y1 == y(blobIdx))
             sx = x1 - ceil(w(blobIdx)/2);       % Note: x moves horizontally (left to right) along width
             sy = y1 - ceil(h(blobIdx)/2);       % Note: y moves vertically (top to bottom) along height        
@@ -150,10 +174,7 @@ tdiff = diff(ts);                    % time difference between successive frames
             end
         blobCell{i,4} = [y1 x1 sy sx w(blobIdx) h(blobIdx)];   % COL#4: bounding box
 
-        % [SHELVED] imwrite to the disk to store a copy of the extracted blob
-        % For now, just store in .mat workspace file for more compact storage
     end
-
 
     % Track cell information
     trackCount = nonzeros(sparse(histc(tr,0:max(tr))));
@@ -170,12 +191,8 @@ tdiff = diff(ts);                    % time difference between successive frames
         % More track information to be appended over here
         % e.g. velocity, feature descriptor, etc. 
         %trackCell{t}.blobSizes = blobsizes(trackCell{t}.blobIdxs)';
- 
     end
 
 % Save important variables to storage
-cd(path);
-save([vidfile,'_trackedblobs'],'blobCell','trackCell','timesortedBlobs');  
-
+disp(['Finished extracting ',vidfile]);
 end
-
