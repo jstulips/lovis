@@ -1,57 +1,75 @@
-function xyz(vidfile)
-vidfile = '001_2010-09-09_11-00-00';
-load(['\LOST\001\MAT Files\',vidfile,'_trackedblobs'],'blobCell','trackCell');
+% XYZ 
+% Test experimental script to perform clustering on all tracks in one day
+%
+db_path = 'D:\LOST\';
+mat_dir_name = 'Mat Files\';
+options.verbose = 0;
+options.display = 0;
+distMatFile = '017_chamfer25_distMat';
+querydate = '2013-11-07';           % yyyy-mm-dd
 
-% compute pairwise distance matrix
-T = length(trackCell);
-distMat = zeros(T,T);
-for f = 1 : T
-    for g = 1 : T
-        if (f == g)
-            continue;        
-        else
-            P = trackCell{f}.fv;
-            Q = trackCell{g}.fv;
-            distMat(f,g) = chamferDist(P, Q, 25);    
-        end
+camera_id = strtok(distMatFile,'_');
+matfile_path = [db_path, camera_id, '\', mat_dir_name];
+cd(matfile_path);
+load(distMatFile); 
+
+idx = find(dtn == datenum(querydate));
+if ~isempty(idx)
+    distMat = distMatFull{idx};
+    if isempty(distMat)
+        disp('Problem: Distance matrix is empty.');
+        disp(['Likely there are no tracks available on selected date ',querydate]);
+        return;
+    else
+        matfile_folder = dir([matfile_path,'\*_trackedblobs.mat']);
+        fileformat = [camera_id,'_',querydate];
+        k = strncmp(fileformat,cellstr(char(matfile_folder.name)), 14);
+        matfilename = matfile_folder(find(k)).name;
+        load(matfilename);
     end
-    disp(['Computing distances from track ',num2str(f),' / ',num2str(T)]);
+else
+    error('Invalid query date! Information does not exist.');
 end
+%---------------------------------------------------------------------------------------------------------
+% Clustering
+
+% normalize distance matrix (using min-max normalization)
+distMat = normalization(distMat,'minmax');
 
 % compute affinity matrix (Gaussian kernel) from distance matrix
 sigma = 1;   % sigma = 5 as reported in paper seems like a really bad value...
 AMat = exp(-distMat./(sigma^2));
 
-% normalize distance matrix (using min-max normalization)
-distMat = normalization(distMat,'minmax');
+% perform over-clustering with k-means to obtain only main tracks
+minClustSize = 4;
+[mainTracks, Ntt] = overclustering(distMat, minClustSize);
 
-% perform k-means clustering
-disp(sprintf('\nPerforming k-means clustering...'));
-clusterNum = 41;
-[centerIndex, U, objFun] = kMeansClusteringOnDist(distMat, clusterNum);
-[clusterID tID] = find(U);
+% re-format AMat using only the main tracks 
+minorTracks = setdiff(1:length(AMat),mainTracks)';
+AMat(minorTracks, :) = [];      % discard rows of minorTracks
+AMat(: , minorTracks) = [];      % discard columns of minorTracks
 
-% show clustered tracks on video frame in coloured trajectories
-mov = VideoReader([vidfile,'.avi']);
-vidFrames = read(mov);
-figure, imshow(vidFrames(:,:,:,1));
-for f = 1 : T
-    blobIdxs = trackCell{f}.blobIdxs;
-    bbox = blobCell(blobIdxs, 4);
-    bboxMat = cell2mat(bbox);
-    line(bboxMat(:,2),bboxMat(:,1),'color', getColor(clusterID(f),1));
-    hold on;
-end
+% clustering with affinity propagation
+prefvector = median(AMat,2) ./ Ntt;        % take row-wise median values as preference vector
+[clusterID,netsim,dpsim,expref] = apcluster(AMat, prefvector);   % use default settings
+clusterCenters = unique(clusterID);
+clusterNum = length(clusterCenters);
 
 % histogram of clusters
-H = hist(clusterID,clusterNum)'; 
-figure
-for i=1:numel(H)
-  h = bar(i, H(i));
-  %if i == 1, 
-  hold on;
-  %end
-  set(h, 'FaceColor', getColor(i,1)) 
-end  
+[bincount2, clusterbin] = histc(clusterID,clusterCenters);
+disp(['Number of clusters: ',num2str(length(bincount2))]);
+
+% show clustered tracks on video frame in coloured trajectories
+cd('D:\LOST\001\');
+vidfile = matfilename(1:max(findstr(matfilename,'_'))-1);
+mov = VideoReader([vidfile,'.avi']);
+vidFrame = read(mov, 1);
+
+displayTracks(vidFrame, clusterID, trackCell, blobCell, 'over-clustered', mainTracks);
+displayTracks(vidFrame, clusterID, trackCell, blobCell, 'exemplar', mainTracks);
+
+% draw histogram bar
+displayHist(bincount2); 
+
 
 
