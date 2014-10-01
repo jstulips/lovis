@@ -1,3 +1,7 @@
+% AUTOMATE_EXTRACTBLOB
+% Script to automate extraction and computation of blob, track and 
+% timestamp information, then saving them as trackedblobs MAT-file
+%
 db_path = 'D:\LOST\';
 mat_dir_name = 'Mat Files';
 camera = {'001','002','003','004','005','006','007','008','009', '010', '011','013','014',...
